@@ -30,10 +30,11 @@ class Continuous_MountainCarEnv(gym.Env):
         state the agent may choose to accelerate to the left, right or cease
         any acceleration.
     Observation:
-        Type: Box(2)
+        Type: Box(3)
         Num    Observation               Min            Max
         0      Car Position              -1.2           0.6
         1      Car Velocity              -0.07          0.07
+        3      Car Angle                 -3             3
     Actions:
         Type: Box(1)
         Num    Action                    Min            Max
@@ -62,6 +63,7 @@ class Continuous_MountainCarEnv(gym.Env):
         self.min_position = -1.2
         self.max_position = 0.6
         self.max_speed = 0.07
+        self.max_angle = 3
         self.goal_position = (
             0.45  # was 0.5 in gym, 0.45 in Arnaud de Broissia's version
         )
@@ -69,10 +71,10 @@ class Continuous_MountainCarEnv(gym.Env):
         self.power = 0.0015
 
         self.low_state = np.array(
-            [self.min_position, -self.max_speed], dtype=np.float32
+            [self.min_position, -self.max_speed, -self.max_angle], dtype=np.float32
         )
         self.high_state = np.array(
-            [self.max_position, self.max_speed], dtype=np.float32
+            [self.max_position, self.max_speed, self.max_angle], dtype=np.float32
         )
 
         self.viewer = None
@@ -116,16 +118,23 @@ class Continuous_MountainCarEnv(gym.Env):
         if done:
             reward = 100.0
         reward -= math.pow(action[0], 2) * 0.1
+        
+        angle = self._angle(position)
 
-        self.state = np.array([position, velocity], dtype=np.float32)
+        self.state = np.array([position, velocity, angle], dtype=np.float32)
+
         return self.state, reward, done, {}
 
     def reset(self):
-        self.state = np.array([self.np_random.uniform(low=-0.6, high=-0.4), 0])
+        x = self.np_random.uniform(low=-0.6, high=-0.4)
+        self.state = np.array([x, 0, self._angle(x)])
         return np.array(self.state, dtype=np.float32)
 
     def _height(self, xs):
         return np.sin(3 * xs) * 0.45 + 0.55
+    
+    def _angle(self, pos: float) -> float:
+        return -3*math.sin(3*pos)
 
     def render(self, mode="human"):
         screen_width = 600

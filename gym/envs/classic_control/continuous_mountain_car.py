@@ -57,7 +57,9 @@ class Continuous_MountainCarEnv(gym.Env):
 
     metadata = {"render.modes": ["human", "rgb_array"], "video.frames_per_second": 30}
 
-    def __init__(self, goal_velocity=0):
+    def __init__(self,
+                 full_obs=True,
+                 goal_velocity=0):
         self.min_action = -1.0
         self.max_action = 1.0
         self.min_position = -1.2
@@ -67,15 +69,19 @@ class Continuous_MountainCarEnv(gym.Env):
         self.goal_position = (
             0.45  # was 0.5 in gym, 0.45 in Arnaud de Broissia's version
         )
+        self.full_obs = full_obs
         self.goal_velocity = goal_velocity
         self.power = 0.0015
-
+        
         self.low_state = np.array(
-            [self.min_position, -self.max_speed, -self.max_angle], dtype=np.float32
+            [self.min_position, -self.max_speed], dtype=np.float32
         )
         self.high_state = np.array(
-            [self.max_position, self.max_speed, self.max_angle], dtype=np.float32
+            [self.max_position, self.max_speed], dtype=np.float32
         )
+        if (self.full_obs):
+            self.low_state = np.append(self.low_state, -self.max_angle)
+            self.high_state = np.append(self.high_state, self.max_angle)
 
         self.viewer = None
 
@@ -118,10 +124,10 @@ class Continuous_MountainCarEnv(gym.Env):
         if done:
             reward = 100.0
         reward -= math.pow(action[0], 2) * 0.1
-        
-        angle = self._angle(position)
 
-        self.state = np.array([position, velocity, angle], dtype=np.float32)
+        self.state = np.array([position, velocity], dtype=np.float32)
+        if (self.full_obs):
+            self.state = np.append(self.state, self._angle(position))
 
         return self.state, reward, done, {}
 
@@ -134,7 +140,7 @@ class Continuous_MountainCarEnv(gym.Env):
         return np.sin(3 * xs) * 0.45 + 0.55
     
     def _angle(self, pos: float) -> float:
-        return -3*math.sin(3*pos)
+        return math.cos(3 * pos)
 
     def render(self, mode="human"):
         screen_width = 600

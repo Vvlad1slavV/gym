@@ -133,7 +133,9 @@ class Continuous_MountainCarEnv(gym.Env):
 
     def reset(self):
         x = self.np_random.uniform(low=-0.6, high=-0.4)
-        self.state = np.array([x, 0, self._angle(x)])
+        self.state = np.array([x, 0])
+        if (self.full_obs):
+            self.state = np.append(self.state, self._angle(x))
         return np.array(self.state, dtype=np.float32)
 
     def _height(self, xs):
